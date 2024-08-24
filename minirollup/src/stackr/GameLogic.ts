@@ -1,8 +1,10 @@
 import ROT from 'rot-js';
 
 import { Corridor, Room } from 'rot-js/lib/map/features';
-import { Entity, Counters, ENTITY_TYPE } from './state';
-    
+import { Entity, Counters, ENTITY_TYPE, newEntity } from './state';
+
+import {randomBytes} from 'node:crypto';
+
 const WIDTH = 50;
 const HEIGHT = 44;
 
@@ -21,23 +23,96 @@ type MapType = {
 /** like python's randint */
 const randint = ROT.RNG.getUniformInt.bind(ROT.RNG);
 
+export function movePlayer(state: Counters, dx: number, dy: number) {
+    ROT.RNG.setSeed(Number(state.currentseed));
+    // update random seed... probable not a good idea if this has to run deterministicly
+    state.currentseed = randomBytes(32).toString('hex');
+
+    const player = state.entities.find((v) => {
+        return (v.type === 'PLAYER');
+    });
+
+    if(!player) {
+        throw new Error('Player not found');
+    }
+
+    const x = player.x + dx;
+    const y = player.y + dy;
+
+    const map = createMap(state);
+
+    if (!map.get(x, y).walkable) {
+        return; // @q: should we throw an error here?
+    }
+    let target = entityAt(state, x, y);
+    if (target && target.id !== player.id) {
+        attack(player, target);
+    } else {
+        player.x = x;
+        player.y = y;
+    }
+    // enemiesMove();
+}
+
+function attack(attacker: Entity, defender: Entity) {
+    let damage = (attacker.effective_power || 0) - (defender.effective_defense || 0);
+    let color = attacker.id === player.id? 'player-attack' : 'enemy-attack';
+    if (damage > 0) {
+        //print(`${attacker.name} attacks ${defender.name} for ${damage} hit points.`, color);
+        takeDamage(attacker, defender, damage);
+    } else {
+        //print(`${attacker.name} attacks ${defender.name} but does no damage.`, color);
+    }
+}
+
+
+function takeDamage(source: Entity, target: Entity, amount: number) {
+    target.hp -= amount;
+    if (target.hp <= 0) {
+        //print(`${target.name} dies!`, target.id === player.id? 'player-die' : 'enemy-die');
+        if (target.xp_award !== undefined) { gainXp(source, target.xp_award); }
+        target.dead = true;
+    }
+}
+
+
+function xpForLevel(level: number) {
+    return 200 * level + 150 * (level * (level+1)) / 2;
+}
+
+function gainXp(entity: Entity, amount: number) {
+    if (entity.xp === undefined) { return; } // this entity doesn't gain experience
+    entity.xp += amount;
+    if (entity.type !== ENTITY_TYPE.PLAYER) { throw `XP for non-player not implemented`; }
+    print(`You gain ${amount} experience points.`, 'info');
+    while (entity.xp > xpForLevel(entity.level || 0)) {
+        entity.level =(entity.level ||0) + 1;
+        //print(`Your battle skills grow stronger! You reached level ${entity.level}! +20 hp`, 'warning');
+        // @todo, know it only update hp
+        player.base_max_hp = (player.base_max_hp || 0) + 20;
+        player.hp += 20;
+        //upgradeOverlay.open();
+    }
+}
+
 function createPlayer(state: Counters, ids: {i: number}) {
-    const player: Entity = {
-        id: ids.i++,
-        type: ENTITY_TYPE.PLAYER,
-        x: 0,
-        y: 0,
-        extra: JSON.stringify({
+    const player: Entity = newEntity(
+        ids.i++,
+        ENTITY_TYPE.PLAYER,
+        0,
+        0,
+        JSON.stringify({
             base_max_hp: 100,
-            base_defense: 1, base_power: 4,
-            xp: 0, level: 1,
+            base_defense: 1,
+            base_power: 4,
+            xp: 0,
+            level: 1,
             inventory: [],
             equipment: [],
         })
-    };
+    );
     return player;
 }
-
 
 export function createMap(state: Counters) {
     ROT.RNG.setSeed(Number(state.genseed));
@@ -83,13 +158,13 @@ export function createMap(state: Counters) {
         // Put stairs in the last room
         let [stairX, stairY] = _map.rooms[_map.rooms.length-1].getCenter();
         
-        state.entities.push({
-            id: ids.i++,
-            type: ENTITY_TYPE.STAIRS,
-            x: stairX,
-            y: stairY,
-            extra: ''
-        });
+        state.entities.push(newEntity(
+            ids.i++,
+            ENTITY_TYPE.STAIRS,
+            stairX,
+            stairY,
+            ''
+        ));
 
         // Put monster and items in all the rooms
         for (let room of _map.rooms) {
@@ -113,12 +188,12 @@ function populateRoom(map: MapType, room: Room, state: Counters, ids: {i: number
             ORC: 80,
             //troll: evaluateStepFunction([[3, 15], [5, 30], [7, 60]], state.level),
         };
-        const monsterProps: {[key: string]: { props: { hp: number }; type: ENTITY_TYPE; }} = {
+        const monsterProps: {[key: string]: { props: any; type: ENTITY_TYPE; }} = {
             ORC: {
                 props:{
-                    /*base_max_hp: 20*/ 
+                    base_max_hp: 20,
                     hp: 20, 
-                    /*base_defense: 0, base_power: 4, ai*/
+                    base_defense: 0, base_power: 4 // , ai
                 },
                 type: ENTITY_TYPE.ORC
             }
@@ -132,15 +207,14 @@ function populateRoom(map: MapType, room: Room, state: Counters, ids: {i: number
             if (!state.entities.find(e => e.x === x && e.y === y)) {
                 let type = ROT.RNG.getWeightedValue(monsterChances);
                 if(type && monsterProps[type]) {
-                    state.entities.push({
-                        id: ids.i++,
-                        type: monsterProps[type].type,
+                    state.entities.push(newEntity(
+                        ids.i++,
+                        monsterProps[type].type,
                         x,
                         y,
-                        extra: JSON.stringify(monsterProps[type].props)
-                    });
-                }
-                
+                        JSON.stringify(monsterProps[type].props)
+                    ));
+                }   
             }
         }
 
@@ -165,6 +239,9 @@ function populateRoom(map: MapType, room: Room, state: Counters, ids: {i: number
             */
 }
 
+function entityAt(state: Counters, x: number, y: number) {
+    return state.entities.find(e => e.x === x && e.y === y);
+}
 
 /** return a blocking entity at (x,y) or null if there isn't one * /
 function blockingEntityAt(map, x: number, y: number) {
