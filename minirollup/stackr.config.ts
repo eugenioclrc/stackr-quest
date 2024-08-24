@@ -23,9 +23,9 @@ const stackrConfig: StackrConfig = {
     ],
   },
   domain: {
-    name: "Stackr MVP v0",
+    name: "StackrQuest",
     version: "1",
-    salt: "0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    salt: "0x84a6a617d3078517f6f6610921717927c98d88c4cffe8c7ea017c4abb61b4dce",
   },
   datastore: {
     type: "sqlite",

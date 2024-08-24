@@ -19,12 +19,49 @@ const main = async () => {
     msgSender: wallet.address,
   });
 
-  const ack = await mru.submitAction("increment", incrementAction);
+  let ack = await mru.submitAction("increment", incrementAction);
   console.log(ack.hash);
 
   // leverage the ack to wait for C1 and access logs & error from STF execution
-  const { logs, errors } = await ack.waitFor(ActionConfirmationStatus.C1);
+  let { logs, errors } = await ack.waitFor(ActionConfirmationStatus.C1);
   console.log({ logs, errors });
+
+  inputs.timestamp = Date.now();
+
+
+  const signature2 = await signMessage(wallet, UpdateCounterSchema, inputs);
+  const incrementAction2 = UpdateCounterSchema.actionFrom({
+    inputs,
+    signature: signature2,
+    msgSender: wallet.address,
+  });
+
+  const ack2 = await mru.submitAction("increment", incrementAction2);
+  console.log(ack2.hash);
+
+  // leverage the ack to wait for C1 and access logs & error from STF execution
+  const rr = await ack2.waitFor(ActionConfirmationStatus.C1);
+  console.log(rr);
+
+
+
+  // Create a random wallet
+  const wallet2 = Wallet.createRandom();
+
+  const signature3 = await signMessage(wallet2, UpdateCounterSchema, inputs);
+  const incrementAction3 = UpdateCounterSchema.actionFrom({
+    inputs,
+    signature: signature3,
+    msgSender: wallet2.address,
+  });
+
+  let ack3 = await mru.submitAction("increment", incrementAction3);
+  console.log(ack3.hash);
+
+  // leverage the ack to wait for C1 and access logs & error from STF execution
+  const er = await ack3.waitFor(ActionConfirmationStatus.C1);
+  console.log(er);
+
 };
 
 main();
