@@ -107,14 +107,19 @@ function populateRoom(map: MapType, room: Room, state: Counters, ids: {i: number
     let maxMonstersPerRoom = evaluateStepFunction([[1, 2], [4, 3], [6, 5]], state.level),
             maxItemsPerRoom = evaluateStepFunction([[1, 1], [4, 2]], state.level);
 
-        const ai = {behavior: 'move_to_player'};
+        // for now always move to player
+        //const ai = {behavior: 'move_to_player'};
         const monsterChances = {
             ORC: 80,
             //troll: evaluateStepFunction([[3, 15], [5, 30], [7, 60]], state.level),
         };
-        const monsterProps: {[key: string]: { props: { base_max_hp: number; base_defense: number; base_power: number; ai: { behavior: string; }; }; type: ENTITY_TYPE; }} = {
+        const monsterProps: {[key: string]: { props: { hp: number }; type: ENTITY_TYPE; }} = {
             ORC: {
-                props:{base_max_hp: 20, base_defense: 0, base_power: 4, ai},
+                props:{
+                    /*base_max_hp: 20*/ 
+                    hp: 20, 
+                    /*base_defense: 0, base_power: 4, ai*/
+                },
                 type: ENTITY_TYPE.ORC
             }
             //troll: {base_max_hp: 30, base_defense: 2, base_power: 8, ai},
@@ -139,6 +144,7 @@ function populateRoom(map: MapType, room: Room, state: Counters, ids: {i: number
             }
         }
 
+        /*
         const itemChances = {
             'healing potion': 70,
             'lightning scroll': 0,// evaluateStepFunction([[4, 25]], state.level),
@@ -147,7 +153,7 @@ function populateRoom(map: MapType, room: Room, state: Counters, ids: {i: number
             sword:  0,//evaluateStepFunction([[4, 5]], state.level),
             shield:  0,//evaluateStepFunction([[8, 15]], state.level),
         };
-        /*
+
         const numItems = randint(0, maxItemsPerRoom);
         for (let i = 0; i < numItems; i++) {
             let x = randint(room.getLeft(), room.getRight()),

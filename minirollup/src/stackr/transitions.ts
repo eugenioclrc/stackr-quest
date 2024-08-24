@@ -11,28 +11,30 @@ const increment: STF<CounterState> = {
       (account) => account.address === msgSender
     );
 
-    if (accountIdx === -1) {
-      const userState = {
-        address: msgSender,
-        level: 1,
-        genseed: randomBytes(32).toString('hex'),
-        currentseed: randomBytes(32).toString('hex'),
-        entities: [],
-      };
+    let userState = accountIdx > -1 ? state[accountIdx] : {
+      address: msgSender,
+      level: 1,
+      genseed: randomBytes(32).toString('hex'),
+      currentseed: randomBytes(32).toString('hex'),
+      entities: [],
+    };
 
-      console.log(createMap(userState))
+    if (accountIdx === -1) {
       state.push(userState);
-    } else {
-      state[accountIdx].currentseed += 1n;
     }
 
-    emit({ name: "ValueAfterIncrement", value: JSON.stringify([msgSender,state]
+    createMap(userState);
+
+    emit({ name: "ValueAfterIncrement", value: JSON.stringify({
+      genseed: userState.genseed,
+      currentseed: userState.currentseed,
+    }
     ) });
     return state;
   },
 };
 
-const decrement: STF<CounterState> = {
+const move: STF<CounterState> = {
   handler: ({ state, emit, inputs }) => {
     const accountIdx = state.findIndex(
       (account) => account.address === inputs.address
@@ -54,5 +56,5 @@ const decrement: STF<CounterState> = {
 
 export const transitions: Transitions<CounterState> = {
   increment,
-  decrement,
+  move,
 };
