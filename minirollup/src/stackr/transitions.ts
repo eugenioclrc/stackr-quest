@@ -1,5 +1,6 @@
 import { STF, Transitions } from "@stackr/sdk/machine";
 import { CounterState } from "./state";
+import { createMap } from "./GameLogic";
 
 // Synchronous
 import {randomBytes} from 'node:crypto';
@@ -11,13 +12,16 @@ const increment: STF<CounterState> = {
     );
 
     if (accountIdx === -1) {
-      const buf = randomBytes(256);
-      state.push({
+      const userState = {
         address: msgSender,
-        randomseed: BigInt(buf.toString('hex')),
-        currentseed: BigInt(buf.toString('hex')),
+        level: 1,
+        genseed: randomBytes(32).toString('hex'),
+        currentseed: randomBytes(32).toString('hex'),
         entities: [],
-      });
+      };
+
+      console.log(createMap(userState))
+      state.push(userState);
     } else {
       state[accountIdx].currentseed += 1n;
     }

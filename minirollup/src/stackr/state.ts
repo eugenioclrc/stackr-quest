@@ -8,7 +8,7 @@ export enum ENTITY_TYPE {
 }
 
 export type Entity = {
-  id: string;
+  id: number;
   x: number;
   y: number;
   type: ENTITY_TYPE;
@@ -17,13 +17,14 @@ export type Entity = {
 
 export type Counters = {
   address: string;
-  randomseed: bigint;// random seed for the map
-  currentseed: bigint; // random seed after each movement
+  level: number;
+  genseed: string;// random seed for the map
+  currentseed: string; // random seed after each movement
   entities: Entity[];
-}[];
+};
 
-export class CounterState extends State<Counters> {
-  constructor(state: Counters) {
+export class CounterState extends State<Counters[]> {
+  constructor(state: Counters[]) {
     super(state);
   }
 
