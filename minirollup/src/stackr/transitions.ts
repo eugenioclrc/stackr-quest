@@ -5,7 +5,7 @@ import { createMap, movePlayer } from "./GameLogic";
 // Synchronous
 import {randomBytes} from 'node:crypto';
 
-const increment: STF<CounterState> = {
+const create: STF<CounterState> = {
   handler: ({ state, emit, msgSender }) => {
     const accountIdx = state.findIndex(
       (account) => account.address === msgSender
@@ -23,7 +23,7 @@ const increment: STF<CounterState> = {
       state.push(userState);
     }
 
-    createMap(userState);
+    const map = createMap(userState);
 
     emit({ name: "ValueAfterIncrement", value: JSON.stringify({
       genseed: userState.genseed,
@@ -61,29 +61,11 @@ const move: STF<CounterState> = {
     } else {
       throw new Error("Invalid position");
     }
-/*
-ArrowRight:  ['move', +1, 0],
-ArrowLeft:   ['move', -1, 0],
-ArrowDown:   ['move', 0, +1],
-ArrowUp:     ['move', 0, -1],
-*/
-    
-/*
-    if (accountIdx === -1) {
-      state.push({
-        address: inputs.address,
-        counter: -1,
-      });
-    } else {
-      state[accountIdx].counter -= 1;
-    }
-    emit({ name: "ValueAfterDecrement", value: JSON.stringify(state) });
-    */
     return state;
   },
 };
 
 export const transitions: Transitions<CounterState> = {
-  increment,
+  create,
   move,
 };
